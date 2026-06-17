@@ -136,7 +136,7 @@
                 <div class="flex items-center gap-4">
                     <button
                         type="button"
-                        onclick="openEquityModal({{ $account->id }}, '{{ e($account->name) }}', {{ $account->starting_balance ?? 0 }})"
+                        onclick="openEquityModal({{ $account->id }}, '{{ e($account->name) }}', {{ $account->starting_balance ?? 0 }}, {{ $account->open_positions_count }})"
                         class="text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 transition-colors"
                     >
                         Set Equity
@@ -333,7 +333,7 @@
     <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm border border-gray-200 dark:border-slate-700">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
             <div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Set Starting Balance</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Set Equity</h3>
                 <p id="equity-modal-account-name" class="text-sm text-gray-500 dark:text-slate-400 mt-0.5"></p>
             </div>
             <button onclick="closeEquityModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200">
@@ -343,34 +343,58 @@
             </button>
         </div>
         <div class="px-6 py-5">
-            <p class="text-sm text-gray-500 dark:text-slate-400 mb-4">
-                This sets the base capital for the account. Equity = Starting Balance + P&amp;L. Your trades and P&amp;L are not affected.
-            </p>
-            <form onsubmit="submitSetEquity(event)">
-                <input type="hidden" id="equity-account-id">
-                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Starting Balance *
-                </label>
-                <input
-                    type="number"
-                    id="equity-starting-balance"
-                    step="0.01"
-                    min="0"
-                    required
-                    placeholder="e.g. 500000"
-                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 mb-4"
-                >
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeEquityModal()"
-                        class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                        class="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold transition-colors">
-                        Save
-                    </button>
+            <!-- Blocked: open trades exist -->
+            <div id="equity-blocked-notice" class="hidden mb-4 flex items-start gap-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg px-4 py-3">
+                <svg class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm text-rose-700 dark:text-rose-300">
+                    This account has <strong id="equity-open-count"></strong> open trade(s). Close all trades before setting equity.
+                </p>
+            </div>
+            <!-- Confirm form -->
+            <div id="equity-form-body">
+                <div class="flex items-start gap-3 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg px-4 py-3 mb-4">
+                    <svg class="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm text-cyan-700 dark:text-cyan-300">
+                        Sets equity to exactly the value you enter. Trade history and balance entries will be cleared so P&amp;L doesn't interfere.
+                    </p>
                 </div>
-            </form>
+                <form onsubmit="submitSetEquity(event)">
+                    <input type="hidden" id="equity-account-id">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Equity Value *
+                    </label>
+                    <input
+                        type="number"
+                        id="equity-starting-balance"
+                        step="0.01"
+                        min="0"
+                        required
+                        placeholder="e.g. 500000"
+                        class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 mb-4"
+                    >
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeEquityModal()"
+                            class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold transition-colors">
+                            Set Equity
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <!-- Blocked close button -->
+            <div id="equity-blocked-actions" class="hidden">
+                <button type="button" onclick="closeEquityModal()"
+                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -443,12 +467,26 @@
 
 <script>
     // ── Set Equity Modal ─────────────────────────────────────────────────────
-    function openEquityModal(accountId, accountName, currentBalance) {
+    function openEquityModal(accountId, accountName, currentBalance, openCount) {
         document.getElementById('equity-account-id').value = accountId;
         document.getElementById('equity-modal-account-name').textContent = accountName;
         document.getElementById('equity-starting-balance').value = currentBalance > 0 ? currentBalance : '';
+
+        const blocked        = openCount > 0;
+        const blockedNotice  = document.getElementById('equity-blocked-notice');
+        const formBody       = document.getElementById('equity-form-body');
+        const blockedActions = document.getElementById('equity-blocked-actions');
+
+        document.getElementById('equity-open-count').textContent = openCount;
+
+        blockedNotice.classList.toggle('hidden', !blocked);
+        formBody.classList.toggle('hidden', blocked);
+        blockedActions.classList.toggle('hidden', !blocked);
+
         document.getElementById('equity-modal').classList.remove('hidden');
-        setTimeout(() => document.getElementById('equity-starting-balance').focus(), 100);
+        if (!blocked) {
+            setTimeout(() => document.getElementById('equity-starting-balance').focus(), 100);
+        }
     }
 
     function closeEquityModal() {
