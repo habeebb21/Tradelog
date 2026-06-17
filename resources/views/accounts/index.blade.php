@@ -136,6 +136,13 @@
                 <div class="flex items-center gap-4">
                     <button
                         type="button"
+                        onclick="openEquityModal({{ $account->id }}, '{{ e($account->name) }}', {{ $account->starting_balance ?? 0 }})"
+                        class="text-sm font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 transition-colors"
+                    >
+                        Set Equity
+                    </button>
+                    <button
+                        type="button"
                         onclick="openBalanceModal({{ $account->id }}, '{{ e($account->name) }}')"
                         class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors"
                     >
@@ -260,6 +267,53 @@
     </div>
 </div>
 
+<!-- Set Equity Modal -->
+<div id="equity-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm border border-gray-200 dark:border-slate-700">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Set Starting Balance</h3>
+                <p id="equity-modal-account-name" class="text-sm text-gray-500 dark:text-slate-400 mt-0.5"></p>
+            </div>
+            <button onclick="closeEquityModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="px-6 py-5">
+            <p class="text-sm text-gray-500 dark:text-slate-400 mb-4">
+                This sets the base capital for the account. Equity = Starting Balance + P&amp;L. Your trades and P&amp;L are not affected.
+            </p>
+            <form onsubmit="submitSetEquity(event)">
+                <input type="hidden" id="equity-account-id">
+                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                    Starting Balance *
+                </label>
+                <input
+                    type="number"
+                    id="equity-starting-balance"
+                    step="0.01"
+                    min="0"
+                    required
+                    placeholder="e.g. 500000"
+                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 mb-4"
+                >
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeEquityModal()"
+                        class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Adjust Balance Modal -->
 <div id="balance-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
@@ -327,6 +381,47 @@
 </div>
 
 <script>
+    // ── Set Equity Modal ─────────────────────────────────────────────────────
+    function openEquityModal(accountId, accountName, currentBalance) {
+        document.getElementById('equity-account-id').value = accountId;
+        document.getElementById('equity-modal-account-name').textContent = accountName;
+        document.getElementById('equity-starting-balance').value = currentBalance > 0 ? currentBalance : '';
+        document.getElementById('equity-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('equity-starting-balance').focus(), 100);
+    }
+
+    function closeEquityModal() {
+        document.getElementById('equity-modal').classList.add('hidden');
+    }
+
+    async function submitSetEquity(event) {
+        event.preventDefault();
+        const accountId       = document.getElementById('equity-account-id').value;
+        const startingBalance = document.getElementById('equity-starting-balance').value;
+
+        try {
+            const response = await fetch(`/accounts/${accountId}/equity`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ starting_balance: startingBalance }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                closeEquityModal();
+                showAlert('success', data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('error', data.message || 'Failed to update.');
+            }
+        } catch (e) {
+            showAlert('error', 'Something went wrong.');
+        }
+    }
+
     // ── Balance Modal ────────────────────────────────────────────────────────
     let currentBalanceAccountId = null;
     let currentBalanceEntries   = [];

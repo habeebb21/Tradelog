@@ -155,6 +155,25 @@ class AccountsController extends Controller
         ]);
     }
 
+    public function setEquity(Request $request, TradingAccount $account)
+    {
+        if ($account->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $validated = $request->validate([
+            'starting_balance' => 'required|numeric|min:0',
+        ]);
+
+        $account->update(['starting_balance' => $validated['starting_balance']]);
+
+        return response()->json([
+            'success'          => true,
+            'message'          => 'Starting balance updated. Equity will reflect your P&L from here.',
+            'starting_balance' => (float) $account->starting_balance,
+        ]);
+    }
+
     public function storeBalance(Request $request, TradingAccount $account)
     {
         if ($account->user_id !== auth()->id()) {
