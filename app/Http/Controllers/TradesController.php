@@ -1340,19 +1340,44 @@ class TradesController extends Controller
 
         if (count($positions) > 0) {
             $firstDataRow = 2;
-            $lastDataRow = count($positions) + 1;
-            $totalsRowNum = $lastDataRow + 1;
+            $lastDataRow  = count($positions) + 1;
 
             $rows[] = [
-                '',   // A
-                'TOTALS', // B
-                '', '', '', '', '', '', '', '', '', // C-L
-                ['formula' => 'SUM(M'.$firstDataRow.':M'.$lastDataRow.')', 'val' => round((float) $positions->sum(fn (Position $p) => $p->entryBrokerageAmount()), 2)],
-                ['formula' => 'SUM(N'.$firstDataRow.':N'.$lastDataRow.')', 'val' => round((float) $positions->sum(fn (Position $p) => $p->isClosed() ? $p->exitBrokerageAmount() : ($p->markPrice() !== null ? $p->exitBrokerageAmount($p->markPrice()) : 0)), 2)],
-                ['formula' => 'SUM(O'.$firstDataRow.':O'.$lastDataRow.')', 'val' => round((float) $positions->sum(fn (Position $p) => $p->entryBrokerageAmount() + ($p->isClosed() ? $p->exitBrokerageAmount() : ($p->markPrice() !== null ? $p->exitBrokerageAmount($p->markPrice()) : 0))), 2)],
-                ['formula' => 'SUM(P'.$firstDataRow.':P'.$lastDataRow.')', 'val' => round((float) $positions->sum(fn (Position $p) => !$p->isClosed() && !$p->isMarked() ? ($p->floatingPnL() ?? 0) : 0), 2)],
-                ['formula' => 'SUM(Q'.$firstDataRow.':Q'.$lastDataRow.')', 'val' => round((float) $positions->sum(fn (Position $p) => $p->isClosed() ? ($p->realized_pnl ?? 0) : ($p->isMarked() ? ($p->markRealizedPnL() ?? 0) : 0)), 2)],
-                '', '', '', // R, S, T
+                ['val' => '', 'bold' => true],        // A — blank
+                ['val' => 'TOTALS', 'bold' => true],  // B
+                ['val' => '', 'bold' => true],         // C
+                ['val' => '', 'bold' => true],         // D
+                ['val' => '', 'bold' => true],         // E
+                ['val' => '', 'bold' => true],         // F
+                ['val' => '', 'bold' => true],         // G
+                ['val' => '', 'bold' => true],         // H
+                ['val' => '', 'bold' => true],         // I
+                ['val' => '', 'bold' => true],         // J
+                ['val' => '', 'bold' => true],         // K
+                ['val' => '', 'bold' => true],         // L
+                // M — Entry Brokerage total
+                ['formula' => 'SUM(M'.$firstDataRow.':M'.$lastDataRow.')',
+                 'val'     => round((float) $positions->sum(fn (Position $p) => $p->entryBrokerageAmount()), 2),
+                 'bold'    => true],
+                // N — Exit Brokerage total
+                ['formula' => 'SUM(N'.$firstDataRow.':N'.$lastDataRow.')',
+                 'val'     => round((float) $positions->sum(fn (Position $p) => $p->isClosed() ? $p->exitBrokerageAmount() : ($p->markPrice() !== null ? $p->exitBrokerageAmount($p->markPrice()) : 0)), 2),
+                 'bold'    => true],
+                // O — Total Brokerage total
+                ['formula' => 'SUM(O'.$firstDataRow.':O'.$lastDataRow.')',
+                 'val'     => round((float) $positions->sum(fn (Position $p) => $p->entryBrokerageAmount() + ($p->isClosed() ? $p->exitBrokerageAmount() : ($p->markPrice() !== null ? $p->exitBrokerageAmount($p->markPrice()) : 0))), 2),
+                 'bold'    => true],
+                // P — Floating P&L total
+                ['formula' => 'SUM(P'.$firstDataRow.':P'.$lastDataRow.')',
+                 'val'     => round((float) $positions->sum(fn (Position $p) => !$p->isClosed() && !$p->isMarked() ? ($p->floatingPnL() ?? 0) : 0), 2),
+                 'bold'    => true],
+                // Q — Realized P&L total
+                ['formula' => 'SUM(Q'.$firstDataRow.':Q'.$lastDataRow.')',
+                 'val'     => round((float) $positions->sum(fn (Position $p) => $p->isClosed() ? ($p->realized_pnl ?? 0) : ($p->isMarked() ? ($p->markRealizedPnL() ?? 0) : 0)), 2),
+                 'bold'    => true],
+                ['val' => '', 'bold' => true],   // R
+                ['val' => '', 'bold' => true],   // S
+                ['val' => '', 'bold' => true],   // T
             ];
         }
         $filename = 'tradelog-trade-logs-' . now()->format('Y-m-d-His') . '.xlsx';
@@ -1408,35 +1433,66 @@ class TradesController extends Controller
         $sheetXml .= '</cols>';
 
         $sheetXml .= '<sheetData>';
+        $lastRowIndex = count($rows) - 1; // totals row index (for bold detection)
         foreach ($rows as $rowIndex => $row) {
+            $isHeaderRow = ($rowIndex === 0);
+            $isTotalsRow = ($rowIndex === $lastRowIndex && count($positions) > 0);
             $sheetXml .= '<row r="' . ($rowIndex + 1) . '">';
             foreach ($row as $colIndex => $value) {
                 $cellRef = $this->columnLetter($colIndex + 1) . ($rowIndex + 1);
 
-                if ($value === null || $value === '') {
+                // Normalise: plain scalars stay as-is; arrays may carry bold/formula/val
+                $isBold   = false;
+                $formula  = null;
+                $isStrType = false;
+                $rawVal   = $value;
+
+                if (is_array($value)) {
+                    $isBold    = !empty($value['bold']) || $isHeaderRow || $isTotalsRow;
+                    $formula   = $value['formula'] ?? null;
+                    $isStrType = isset($value['type']) && $value['type'] === 'str';
+                    $rawVal    = $value['val'] ?? ($value['value'] ?? '');
+                } elseif ($isHeaderRow || $isTotalsRow) {
+                    $isBold = true;
+                }
+
+                // Skip truly empty non-bold cells
+                if (($rawVal === null || $rawVal === '') && $formula === null && !$isBold) {
                     continue;
                 }
 
-                if (is_array($value) && isset($value['formula'])) {
-                    // XML-escape the formula so characters like <> don't break the file
-                    $formula    = htmlspecialchars($value['formula'], ENT_XML1 | ENT_COMPAT, 'UTF-8');
-                    $isStrType  = isset($value['type']) && $value['type'] === 'str';
-                    $typeAttr   = $isStrType ? ' t="str"' : '';   // numeric formulas: no t attribute
-                    $sheetXml  .= '<c r="' . $cellRef . '"' . $typeAttr . '><f>' . $formula . '</f>';
-                    if (isset($value['val']) && $value['val'] !== null && $value['val'] !== '') {
-                        // String formula cached value must also be XML-escaped
+                $styleAttr = $isBold ? ' s="1"' : '';  // s="1" = bold style
+
+                if ($formula !== null) {
+                    // XML-escape formula (handles <> in IF conditions)
+                    $escapedFormula = htmlspecialchars($formula, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+                    $typeAttr = $isStrType ? ' t="str"' : '';
+                    $sheetXml .= '<c r="' . $cellRef . '"' . $typeAttr . $styleAttr . '>'
+                               . '<f>' . $escapedFormula . '</f>';
+                    // Always write cached value so Excel shows it without recalculating
+                    if ($rawVal !== null && $rawVal !== '') {
                         $cachedVal = $isStrType
-                            ? htmlspecialchars((string) $value['val'], ENT_XML1 | ENT_COMPAT, 'UTF-8')
-                            : $this->formatExcelNumeric($value['val']);
+                            ? htmlspecialchars((string) $rawVal, ENT_XML1 | ENT_COMPAT, 'UTF-8')
+                            : $this->formatExcelNumeric($rawVal);
                         $sheetXml .= '<v>' . $cachedVal . '</v>';
+                    } elseif (is_numeric($rawVal)) {
+                        // val === 0 — still write it
+                        $sheetXml .= '<v>0</v>';
                     }
                     $sheetXml .= '</c>';
-                } elseif (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value) && !preg_match('/^0\d/', $value))) {
-                    // Numeric cell — NO t attribute (omitting t means numeric in OOXML)
-                    $sheetXml .= '<c r="' . $cellRef . '"><v>' . $this->formatExcelNumeric($value) . '</v></c>';
+                } elseif ($rawVal === null || $rawVal === '') {
+                    // Bold empty cell — write as empty inline string so the style applies
+                    $sheetXml .= '<c r="' . $cellRef . '" t="inlineStr"' . $styleAttr . '>'
+                               . '<is><t/></is></c>';
+                } elseif (is_int($rawVal) || is_float($rawVal)
+                       || (is_string($rawVal) && is_numeric($rawVal) && !preg_match('/^0\d/', $rawVal))) {
+                    // Numeric — no t attribute
+                    $sheetXml .= '<c r="' . $cellRef . '"' . $styleAttr . '>'
+                               . '<v>' . $this->formatExcelNumeric($rawVal) . '</v></c>';
                 } else {
-                    $sheetXml .= '<c r="' . $cellRef . '" t="inlineStr"><is><t xml:space="preserve">'
-                               . $this->xlsxEscape((string) $value) . '</t></is></c>';
+                    $sheetXml .= '<c r="' . $cellRef . '" t="inlineStr"' . $styleAttr . '>'
+                               . '<is><t xml:space="preserve">'
+                               . $this->xlsxEscape((string) $rawVal) . '</t></is></c>';
                 }
             }
             $sheetXml .= '</row>';
@@ -1452,7 +1508,26 @@ class TradesController extends Controller
         $zip->addFromString('docProps/core.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>Tradelog</dc:creator><cp:lastModifiedBy>Tradelog</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">' . now()->toAtomString() . '</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">' . now()->toAtomString() . '</dcterms:modified></cp:coreProperties>');
         $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><workbookPr/><bookViews><workbookView activeTab="0"/></bookViews><sheets><sheet name="Trade Logs" sheetId="1" r:id="rId1"/></sheets><calcPr calcMode="auto" calcId="124519" fullCalcOnLoad="1" forceFullCalc="1"/></workbook>');
         $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
-        $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
+        $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            // Two fonts: 0=normal, 1=bold
+            . '<fonts count="2">'
+            .   '<font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font>'
+            .   '<font><b/><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font>'
+            . '</fonts>'
+            . '<fills count="2">'
+            .   '<fill><patternFill patternType="none"/></fill>'
+            .   '<fill><patternFill patternType="gray125"/></fill>'
+            . '</fills>'
+            . '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+            // Two cell formats: 0=normal, 1=bold
+            . '<cellXfs count="2">'
+            .   '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+            .   '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"><font/></xf>'
+            . '</cellXfs>'
+            . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+            . '</styleSheet>');
         $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
         $zip->close();
 
