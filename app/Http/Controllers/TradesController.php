@@ -1368,35 +1368,43 @@ class TradesController extends Controller
             abort(500, 'Unable to create XLSX archive.');
         }
 
-        $lastColumn = $this->columnLetter(count($headers));
-        $rowCount = count($rows);
+        // Row count must be calculated AFTER all rows (including totals) are appended
+        $lastColumn  = $this->columnLetter(count($headers));
+        $totalRows   = count($rows);   // header + data + optional totals row
 
-        $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-        $sheetXml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
-        $sheetXml .= '<dimension ref="A1:' . $lastColumn . $rowCount . '"/>';
-        
-        // Add custom column widths
+        $sheetXml  = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $sheetXml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+                   . ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+        $sheetXml .= '<dimension ref="A1:' . $lastColumn . $totalRows . '"/>';
+
+        // Freeze the header row and auto-filter
+        $sheetXml .= '<sheetViews><sheetView tabSelected="1" workbookViewId="0">'
+                   . '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+                   . '</sheetView></sheetViews>';
+        $sheetXml .= '<autoFilter ref="A1:' . $lastColumn . '1"/>';
+
+        // Column widths
         $sheetXml .= '<cols>';
-        $sheetXml .= '<col min="1" max="1" width="12" customWidth="1"/>';
-        $sheetXml .= '<col min="2" max="2" width="25" customWidth="1"/>';
-        $sheetXml .= '<col min="3" max="3" width="18" customWidth="1"/>';
-        $sheetXml .= '<col min="4" max="4" width="12" customWidth="1"/>';
-        $sheetXml .= '<col min="5" max="5" width="12" customWidth="1"/>';
-        $sheetXml .= '<col min="6" max="6" width="12" customWidth="1"/>';
-        $sheetXml .= '<col min="7" max="7" width="14" customWidth="1"/>';
-        $sheetXml .= '<col min="8" max="8" width="14" customWidth="1"/>';
-        $sheetXml .= '<col min="9" max="9" width="12" customWidth="1"/>';
-        $sheetXml .= '<col min="10" max="10" width="14" customWidth="1"/>';
-        $sheetXml .= '<col min="11" max="11" width="12" customWidth="1"/>';
-        $sheetXml .= '<col min="12" max="12" width="16" customWidth="1"/>';
-        $sheetXml .= '<col min="13" max="13" width="16" customWidth="1"/>';
-        $sheetXml .= '<col min="14" max="14" width="16" customWidth="1"/>';
-        $sheetXml .= '<col min="15" max="15" width="16" customWidth="1"/>';
-        $sheetXml .= '<col min="16" max="16" width="16" customWidth="1"/>';
-        $sheetXml .= '<col min="17" max="17" width="22" customWidth="1"/>';
-        $sheetXml .= '<col min="18" max="18" width="22" customWidth="1"/>';
-        $sheetXml .= '<col min="19" max="19" width="22" customWidth="1"/>';
-        $sheetXml .= '<col min="20" max="20" width="12" customWidth="1"/>';
+        $sheetXml .= '<col min="1"  max="1"  width="8"  customWidth="1"/>';  // Serial No
+        $sheetXml .= '<col min="2"  max="2"  width="24" customWidth="1"/>';  // Trading Account
+        $sheetXml .= '<col min="3"  max="3"  width="18" customWidth="1"/>';  // Script Name
+        $sheetXml .= '<col min="4"  max="4"  width="10" customWidth="1"/>';  // Segment
+        $sheetXml .= '<col min="5"  max="5"  width="10" customWidth="1"/>';  // Trade Side
+        $sheetXml .= '<col min="6"  max="6"  width="10" customWidth="1"/>';  // Lots/Qty
+        $sheetXml .= '<col min="7"  max="7"  width="13" customWidth="1"/>';  // Entry Price
+        $sheetXml .= '<col min="8"  max="8"  width="13" customWidth="1"/>';  // Exit Price
+        $sheetXml .= '<col min="9"  max="9"  width="10" customWidth="1"/>';  // Lot Size
+        $sheetXml .= '<col min="10" max="10" width="13" customWidth="1"/>';  // Total Shares
+        $sheetXml .= '<col min="11" max="11" width="13" customWidth="1"/>';  // Market Price
+        $sheetXml .= '<col min="12" max="12" width="13" customWidth="1"/>';  // Brokerage %
+        $sheetXml .= '<col min="13" max="13" width="16" customWidth="1"/>';  // Entry Brokerage
+        $sheetXml .= '<col min="14" max="14" width="16" customWidth="1"/>';  // Exit Brokerage
+        $sheetXml .= '<col min="15" max="15" width="16" customWidth="1"/>';  // Total Brokerage
+        $sheetXml .= '<col min="16" max="16" width="16" customWidth="1"/>';  // Floating P&L
+        $sheetXml .= '<col min="17" max="17" width="16" customWidth="1"/>';  // Realized P&L
+        $sheetXml .= '<col min="18" max="18" width="22" customWidth="1"/>';  // Opened Date
+        $sheetXml .= '<col min="19" max="19" width="22" customWidth="1"/>';  // Closed Date
+        $sheetXml .= '<col min="20" max="20" width="10" customWidth="1"/>';  // Status
         $sheetXml .= '</cols>';
 
         $sheetXml .= '<sheetData>';
@@ -1410,17 +1418,25 @@ class TradesController extends Controller
                 }
 
                 if (is_array($value) && isset($value['formula'])) {
-                    $formula = $value['formula'];
-                    $typeAttr = isset($value['type']) ? ' t="' . $value['type'] . '"' : '';
-                    $sheetXml .= '<c r="' . $cellRef . '"' . $typeAttr . '><f>' . $formula . '</f>';
+                    // XML-escape the formula so characters like <> don't break the file
+                    $formula    = htmlspecialchars($value['formula'], ENT_XML1 | ENT_COMPAT, 'UTF-8');
+                    $isStrType  = isset($value['type']) && $value['type'] === 'str';
+                    $typeAttr   = $isStrType ? ' t="str"' : '';   // numeric formulas: no t attribute
+                    $sheetXml  .= '<c r="' . $cellRef . '"' . $typeAttr . '><f>' . $formula . '</f>';
                     if (isset($value['val']) && $value['val'] !== null && $value['val'] !== '') {
-                        $sheetXml .= '<v>' . $value['val'] . '</v>';
+                        // String formula cached value must also be XML-escaped
+                        $cachedVal = $isStrType
+                            ? htmlspecialchars((string) $value['val'], ENT_XML1 | ENT_COMPAT, 'UTF-8')
+                            : $this->formatExcelNumeric($value['val']);
+                        $sheetXml .= '<v>' . $cachedVal . '</v>';
                     }
                     $sheetXml .= '</c>';
-                } elseif (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value))) {
-                    $sheetXml .= '<c r="' . $cellRef . '" t="n"><v>' . $this->formatExcelNumeric($value) . '</v></c>';
+                } elseif (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value) && !preg_match('/^0\d/', $value))) {
+                    // Numeric cell — NO t attribute (omitting t means numeric in OOXML)
+                    $sheetXml .= '<c r="' . $cellRef . '"><v>' . $this->formatExcelNumeric($value) . '</v></c>';
                 } else {
-                    $sheetXml .= '<c r="' . $cellRef . '" t="inlineStr"><is><t xml:space="preserve">' . $this->xlsxEscape((string) $value) . '</t></is></c>';
+                    $sheetXml .= '<c r="' . $cellRef . '" t="inlineStr"><is><t xml:space="preserve">'
+                               . $this->xlsxEscape((string) $value) . '</t></is></c>';
                 }
             }
             $sheetXml .= '</row>';
