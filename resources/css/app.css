@@ -1,0 +1,636 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Premium Dark Mode Overhaul */
+html.dark {
+    color-scheme: dark;
+}
+
+html.dark body {
+    background-color: #080d1a !important; /* Rich deep slate-navy */
+    color: #cbd5e1 !important;
+}
+
+/* Sidebar & Layout */
+html.dark aside#sidebar {
+    background-color: #0c1222 !important; /* Slate navy */
+    border-right: 1px solid #1e2d4a !important;
+}
+
+html.dark #sidebar-toggle {
+    background-color: #1e2d4a !important;
+}
+
+html.dark #sidebar-toggle:hover {
+    background-color: #2e3e5a !important;
+}
+
+html.dark main#main-content {
+    background-color: #080d1a !important;
+}
+
+/* Background Card Elements */
+html.dark .bg-white {
+    background-color: #0f172a !important; /* Sleek navy cards */
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-slate-50 {
+    background-color: #162032 !important; /* Mid-slate gray */
+}
+
+html.dark .bg-gray-100 {
+    background-color: #1e293b !important; /* Darker border/pill backgrounds */
+}
+
+html.dark .bg-gray-200 {
+    background-color: #334155 !important;
+}
+
+html.dark .bg-gray-900 {
+    background-color: #020617 !important;
+}
+
+/* Borders */
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-gray-150 {
+    border-color: #1e2d4a !important;
+}
+
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #1e2d4a !important;
+}
+
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #1e2d4a !important;
+}
+
+/* Text Colors */
+html.dark .text-gray-900 {
+    color: #ffffff !important;
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-650,
+html.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+    color: #64748b !important;
+}
+
+/* Interactive elements & inputs */
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background-color: #080d1a !important;
+    color: #ffffff !important;
+    border-color: #1e2d4a !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+    border-color: #ea580c !important; /* Premium orange focus */
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2) !important;
+    outline: none !important;
+}
+
+/* Buttons and Labels */
+html.dark .text-gray-700.hover\:bg-gray-100:hover {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+}
+
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover,
+html.dark .hover\:bg-gray-200:hover {
+    background-color: #1e293b !important;
+}
+
+/* Table styling */
+html.dark table thead {
+    background-color: #162032 !important;
+}
+
+html.dark table tbody tr {
+    background-color: #0f172a !important;
+}
+
+html.dark table tbody tr:hover {
+    background-color: #162032 !important;
+}
+
+/* Premium Dashboard Card Gradients */
+html.dark .bg-gradient-to-br.from-blue-50.to-blue-100 {
+    background-image: linear-gradient(to bottom right, #0c1c36, #0c1222) !important;
+    border: 1px solid #1e2d4a !important;
+}
+
+html.dark .bg-gradient-to-br.from-green-50.to-emerald-100 {
+    background-image: linear-gradient(to bottom right, #072e1d, #0c1222) !important;
+    border: 1px solid #105a3e !important;
+}
+
+html.dark .bg-gradient-to-br.from-red-50.to-rose-100 {
+    background-image: linear-gradient(to bottom right, #441016, #0c1222) !important;
+    border: 1px solid #7a1f29 !important;
+}
+
+html.dark .bg-gradient-to-br.from-orange-50.to-amber-100 {
+    background-image: linear-gradient(to bottom right, #451a03, #0c1222) !important;
+    border: 1px solid #7c2d12 !important;
+}
+
+html.dark .bg-gradient-to-br.from-emerald-50.to-teal-100 {
+    background-image: linear-gradient(to bottom right, #072e1d, #0c1222) !important;
+    border: 1px solid #105a3e !important;
+}
+
+html.dark .bg-gradient-to-br.from-rose-50.to-pink-100 {
+    background-image: linear-gradient(to bottom right, #441016, #0c1222) !important;
+    border: 1px solid #7a1f29 !important;
+}
+
+html.dark .bg-gradient-to-br.from-purple-50.to-violet-100 {
+    background-image: linear-gradient(to bottom right, #2e104a, #0c1222) !important;
+    border: 1px solid #581c87 !important;
+}
+
+html.dark .bg-gradient-to-br.from-cyan-50.to-sky-100 {
+    background-image: linear-gradient(to bottom right, #083344, #0c1222) !important;
+    border: 1px solid #155e75 !important;
+}
+
+html.dark .bg-gradient-to-br.from-indigo-50.to-blue-100 {
+    background-image: linear-gradient(to bottom right, #1e1b4b, #0c1222) !important;
+    border: 1px solid #312e81 !important;
+}
+
+html.dark .bg-gradient-to-br.from-slate-50.to-gray-100 {
+    background-image: linear-gradient(to bottom right, #162032, #0c1222) !important;
+    border: 1px solid #1e2d4a !important;
+}
+
+/* Modals & Dialogs */
+html.dark #add-modal > div,
+html.dark #edit-modal > div,
+html.dark #confirmation-modal > div,
+html.dark #success-modal > div {
+    background-color: #0f172a !important;
+    border: 1px solid #1e2d4a !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Alert Boxes & Notifications */
+html.dark .bg-green-50 {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+}
+
+html.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+    color: #f87171 !important;
+}
+
+html.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+    color: #60a5fa !important;
+}
+
+/* Rich Text Editor for Notes */
+html.dark #notesEditor {
+    background-color: #080d1a !important;
+    color: #ffffff !important;
+    border-color: #1e2d4a !important;
+}
+
+html.dark #notesEditor h1,
+html.dark #notesEditor h2,
+html.dark #notesEditor h3 {
+    color: #ffffff !important;
+}
+
+html.dark #notesForm button[type="submit"] {
+    background-color: #ea580c !important;
+}
+
+html.dark #notesForm button[type="submit"]:hover {
+    background-color: #c2410c !important;
+}
+
+/* FullCalendar Styling Overrides */
+html.dark #pnl-calendar {
+    background-color: #0f172a !important;
+    border: 1px solid #1e2d4a !important;
+}
+
+html.dark #pnl-calendar .fc-toolbar-title {
+    color: #ffffff !important;
+}
+
+html.dark #pnl-calendar .fc-theme-standard td,
+html.dark #pnl-calendar .fc-theme-standard th,
+html.dark #pnl-calendar .fc-theme-standard .fc-scrollgrid {
+    border-color: #1e2d4a !important;
+}
+
+html.dark #pnl-calendar .fc-col-header-cell-cushion {
+    color: #94a3b8 !important;
+}
+
+html.dark #pnl-calendar .fc-daygrid-day-number {
+    color: #cbd5e1 !important;
+}
+
+html.dark #pnl-calendar .fc-daygrid-day-frame:hover {
+    background-color: #162032 !important;
+}
+
+html.dark #pnl-calendar .fc-day-today {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Flash message styles */
+html.dark .flash-message {
+    background-color: #0f172a !important;
+}
+
+/* Asset segment tab active/inactive colors in Add Trade */
+html.dark .asset-type-btn {
+    color: #cbd5e1 !important;
+}
+html.dark .asset-type-btn.bg-orange-600 {
+    background-color: #ea580c !important;
+    color: #ffffff !important;
+}
+html.dark .asset-type-btn:hover:not(.bg-orange-600) {
+    background-color: #1e293b !important;
+}
+
+/* Premium Trading UI */
+.trading-panel {
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 10px 40px -20px rgba(15, 23, 42, 0.25);
+    overflow: hidden;
+}
+
+html.dark .trading-panel {
+    border-color: #1e2d4a;
+    background: linear-gradient(180deg, #0f172a 0%, #080d1a 100%);
+    box-shadow: 0 10px 40px -20px rgba(0, 0, 0, 0.6);
+}
+
+.trading-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: rgba(248, 250, 252, 0.8);
+}
+
+html.dark .trading-panel-header {
+    border-bottom-color: #1e2d4a;
+    background: rgba(12, 18, 34, 0.8);
+}
+
+.trading-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+    .trading-metric-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.trading-metric-cell {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+html.dark .trading-metric-cell {
+    border-color: #1e2d4a;
+}
+
+.trading-metric-cell:nth-child(2n) {
+    border-right: 0;
+}
+
+@media (min-width: 1024px) {
+    .trading-metric-cell:nth-child(2n) {
+        border-right: 1px solid #e2e8f0;
+    }
+
+    html.dark .trading-metric-cell:nth-child(2n) {
+        border-right-color: #1e2d4a;
+    }
+
+    .trading-metric-cell:nth-child(4n) {
+        border-right: 0;
+    }
+}
+
+.trading-metric-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+html.dark .trading-metric-label {
+    color: #94a3b8;
+}
+
+.trading-metric-value {
+    margin-top: 0.5rem;
+    font-size: clamp(0.9rem, 2vw, 1.5rem);
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+html.dark .trading-metric-value {
+    color: #f8fafc;
+}
+
+.trading-card {
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: 0 8px 30px -18px rgba(15, 23, 42, 0.2);
+    overflow: hidden;
+}
+
+html.dark .trading-card {
+    border-color: #1e2d4a;
+    background: #0f172a;
+    box-shadow: 0 8px 30px -18px rgba(0, 0, 0, 0.55);
+}
+
+.trading-table-wrap {
+    overflow-x: auto;
+}
+
+.trading-table {
+    width: 100%;
+    min-width: 960px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.trading-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+    white-space: nowrap;
+}
+
+html.dark .trading-table thead th {
+    color: #94a3b8;
+    background: #162032;
+    border-bottom-color: #1e2d4a;
+}
+
+.trading-table tbody td {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+}
+
+html.dark .trading-table tbody td {
+    color: #e2e8f0;
+    border-bottom-color: #1e2d4a;
+}
+
+.trading-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.trading-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+html.dark .trading-table tbody tr:hover {
+    background: #162032;
+}
+
+.trading-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.trading-table tfoot td {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    background: #f8fafc;
+    border-top: 2px solid #cbd5e1;
+    font-variant-numeric: tabular-nums;
+}
+
+html.dark .trading-table tfoot td {
+    background: #162032;
+    border-top-color: #334155;
+    color: #f8fafc;
+}
+
+.trading-table .col-pnl {
+    font-weight: 700;
+}
+
+.trading-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.trading-badge-live {
+    color: #059669;
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.25);
+}
+
+html.dark .trading-badge-live {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.trading-badge-open {
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.25);
+}
+
+html.dark .trading-badge-open {
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.trading-badge-win {
+    color: #059669;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+html.dark .trading-badge-win {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.trading-badge-loss {
+    color: #dc2626;
+    background: rgba(239, 68, 68, 0.12);
+}
+
+html.dark .trading-badge-loss {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.trading-badge-segment-equity {
+    color: #2563eb;
+    background: rgba(59, 130, 246, 0.12);
+}
+
+html.dark .trading-badge-segment-equity {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.trading-badge-segment-fo {
+    color: #ea580c;
+    background: rgba(249, 115, 22, 0.12);
+}
+
+html.dark .trading-badge-segment-fo {
+    color: #fdba74;
+    background: rgba(249, 115, 22, 0.15);
+}
+
+/* ─── Premium P&L color system ─────────────────────────────────────────────── */
+
+.pnl-positive,
+.text-emerald-600 {
+    color: #059669 !important;
+    text-shadow: 0 0 18px rgba(16, 185, 129, 0.25);
+}
+
+html.dark .pnl-positive,
+html.dark .text-emerald-400 {
+    color: #10b981 !important;
+    text-shadow: 0 0 22px rgba(16, 185, 129, 0.55), 0 0 8px rgba(16, 185, 129, 0.35);
+}
+
+/* Tailwind classes used by pnl_class() helper — profit */
+.text-emerald-600 { color: #059669 !important; text-shadow: 0 0 18px rgba(5, 150, 105, 0.3); }
+html.dark .text-emerald-400 { color: #10b981 !important; text-shadow: 0 0 20px rgba(16, 185, 129, 0.6), 0 0 8px rgba(16, 185, 129, 0.4); }
+
+.pnl-negative,
+.text-rose-600 {
+    color: #e11d48 !important;
+    text-shadow: 0 0 18px rgba(225, 29, 72, 0.25);
+}
+
+html.dark .pnl-negative,
+html.dark .text-rose-400 {
+    color: #f43f5e !important;
+    text-shadow: 0 0 22px rgba(244, 63, 94, 0.55), 0 0 8px rgba(244, 63, 94, 0.35);
+}
+
+/* Tailwind classes used by pnl_class() helper — loss */
+.text-rose-600 { color: #e11d48 !important; text-shadow: 0 0 18px rgba(225, 29, 72, 0.3); }
+html.dark .text-rose-400 { color: #f43f5e !important; text-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 0 8px rgba(244, 63, 94, 0.4); }
+
+.pnl-neutral {
+    color: #64748b !important;
+}
+
+html.dark .pnl-neutral {
+    color: #94a3b8 !important;
+}
+
+/* Explicit red used in trades/accounts for losses */
+html.dark .text-red-600,
+html.dark .text-red-400 {
+    color: #f43f5e !important;
+    text-shadow: 0 0 18px rgba(244, 63, 94, 0.5);
+}
+
+/* Green used directly in some views */
+html.dark .text-green-600,
+html.dark .text-green-400 {
+    color: #10b981 !important;
+    text-shadow: 0 0 18px rgba(16, 185, 129, 0.5);
+}
+
+/* Winning/losing badge inside fills table */
+.text-green-600 { color: #059669 !important; }
+.text-red-600   { color: #dc2626 !important; }
+
+.trading-account-card {
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 10px 40px -22px rgba(15, 23, 42, 0.25);
+    overflow: hidden;
+}
+
+html.dark .trading-account-card {
+    border-color: #1e2d4a;
+    background: linear-gradient(180deg, #0f172a 0%, #080d1a 100%);
+    box-shadow: 0 10px 40px -22px rgba(0, 0, 0, 0.55);
+}
+
+.trading-account-card.is-active {
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35), 0 10px 40px -18px rgba(249, 115, 22, 0.25);
+}
+
+html.dark .trading-account-card.is-active {
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.45), 0 10px 40px -18px rgba(0, 0, 0, 0.55);
+}
