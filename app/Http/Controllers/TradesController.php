@@ -237,8 +237,12 @@ class TradesController extends Controller
             return $position->floatingPnL() ?? 0;
         }), 2);
         $totalRealizedPnl = round((float) $visiblePositions->sum(fn (Position $position) => $position->isClosed() ? ($position->realized_pnl ?? 0) : 0), 2);
-        $totalBrokerage = round((float) $visiblePositions->sum(fn (Position $position) => $position->totalBrokerageAmount()), 2);
-        $grandTotal = round($totalFloatingPnl + $totalRealizedPnl - $totalBrokerage, 2);
+        $totalBrokerage = round((float) $visiblePositions->sum(fn (Position $position) =>
+            $position->isClosed() || $position->isMarked()
+                ? $position->totalBrokerageAmount()
+                : $position->entryBrokerageAmount()
+        ), 2);
+        $grandTotal = round($totalFloatingPnl + $totalRealizedPnl, 2);
         $tradeSummary = [
             'open_positions_count' => $openPositionsCount,
             'closed_positions_count' => $closedPositionsCount,
@@ -1269,16 +1273,16 @@ class TradesController extends Controller
                 'val'     => round($position->entryBrokerageAmount(), 2),
             ];
 
-            // Exit brokerage: use exit price if closed, mark price if open with mark, else 0
-            $exitBrokVal = '';
+            // Exit brokerage: only for closed or mark-mode positions — never for plain-open
+            $exitBrokVal = 0;
             if ($position->isClosed()) {
                 $exitBrokVal = round($position->exitBrokerageAmount(), 2);
-            } elseif ($position->markPrice() !== null) {
+            } elseif ($position->isMarked()) {
                 $exitBrokVal = round($position->exitBrokerageAmount($position->markPrice()), 2);
             }
             $exitBrokerageCell = [
-                'formula' => 'ROUND(IF(S'.$rNum.'<>"",H'.$rNum.'*F'.$rNum.'*I'.$rNum.'*(L'.$rNum.'/100),IF(K'.$rNum.'<>"",K'.$rNum.'*F'.$rNum.'*I'.$rNum.'*(L'.$rNum.'/100),0)),2)',
-                'val'     => $exitBrokVal !== '' ? $exitBrokVal : 0,
+                'formula' => 'ROUND(IF(S'.$rNum.'<>"",H'.$rNum.'*F'.$rNum.'*I'.$rNum.'*(L'.$rNum.'/100),IF(AND(K'.$rNum.'<>"",T'.$rNum.'="Mark"),K'.$rNum.'*F'.$rNum.'*I'.$rNum.'*(L'.$rNum.'/100),0)),2)',
+                'val'     => $exitBrokVal,
             ];
 
             $totalBrokerageCell = [

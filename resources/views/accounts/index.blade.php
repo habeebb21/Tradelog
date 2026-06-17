@@ -65,7 +65,7 @@
                     </div>
 
                     <div class="flex flex-col items-end gap-2">
-                        @php $acctGrandTotal = round((float)($account->floating_pnl ?? 0) + (float)($account->profit_loss ?? 0) - (float)($account->total_brokerage ?? 0), 2); @endphp
+                        @php $acctGrandTotal = round((float)($account->floating_pnl ?? 0) + (float)($account->profit_loss ?? 0), 2); @endphp
                         <span class="text-sm font-bold px-3 py-1 rounded-full {{ $acctGrandTotal >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' }}">
                             {{ $acctGrandTotal >= 0 ? '+' : '' }}{{ inr($acctGrandTotal) }} {{ $acctGrandTotal >= 0 ? 'Cr.' : 'Dr.' }}
                         </span>

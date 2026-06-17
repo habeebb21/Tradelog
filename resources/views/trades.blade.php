@@ -556,7 +556,7 @@
                     <td class="text-right text-violet-600 dark:text-violet-400">
                         @if($position->isClosed())
                             {{ inr($position->exitBrokerageAmount()) }}
-                        @elseif($position->isMarked() || $position->markPrice() !== null)
+                        @elseif($position->isMarked())
                             {{ inr($position->exitBrokerageAmount($position->markPrice())) }}
                         @else
                             <span class="text-gray-400 dark:text-slate-500">—</span>
@@ -637,21 +637,23 @@
                 foreach ($positions as $pos) {
                     $totalEntryBrokerage += $pos->entryBrokerageAmount();
                     if ($pos->isClosed()) {
-                        $totalExitBrokerage += $pos->exitBrokerageAmount();
+                        $totalExitBrokerage  += $pos->exitBrokerageAmount();
                         $totalBrokerageFooter += $pos->totalBrokerageAmount();
-                        $totalRealizedPnl += (float) $pos->realized_pnl;
+                        $totalRealizedPnl    += (float) $pos->realized_pnl;
                     } elseif ($pos->isMarked()) {
-                        $totalExitBrokerage += $pos->exitBrokerageAmount($pos->markPrice());
+                        $totalExitBrokerage  += $pos->exitBrokerageAmount($pos->markPrice());
                         $totalBrokerageFooter += $pos->totalBrokerageAmount($pos->markPrice());
                         $mpnl = $pos->markRealizedPnL();
                         if ($mpnl !== null) { $totalFloatingPnl += $mpnl; }
                     } else {
+                        // plain-open: no exit brokerage yet
                         $totalBrokerageFooter += $pos->entryBrokerageAmount();
                         $fpnl = $pos->floatingPnL();
                         if ($fpnl !== null) { $totalFloatingPnl += $fpnl; }
                     }
                 }
-                $grandTotal = $totalFloatingPnl + $totalRealizedPnl - $totalBrokerageFooter;
+                // grand total = floating + realized (brokerage already baked into both values)
+                $grandTotal = $totalFloatingPnl + $totalRealizedPnl;
             @endphp
             <tfoot>
                 <tr>

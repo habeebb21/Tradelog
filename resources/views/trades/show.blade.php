@@ -234,9 +234,10 @@
                     $floatingPnl    = $position->floatingPnL();
                     $markPnl        = $position->markRealizedPnL();
                     $entryBrokerage = $position->entryBrokerageAmount();
-                    $exitBrokerage  = $position->isClosed()
+                    // Exit brokerage only applies to closed or mark-mode positions
+                    $exitBrokerage  = ($position->isClosed())
                                         ? $position->exitBrokerageAmount()
-                                        : $position->exitBrokerageAmount($currentPrice);
+                                        : ($position->isMarked() ? $position->exitBrokerageAmount($currentPrice) : 0.0);
                     $totalBrokerage = $entryBrokerage + $exitBrokerage;
                 @endphp
                 @if($position->isClosed())
@@ -306,13 +307,13 @@
                     </div>
 
                 @else
-                    {{-- ── OPEN (plain open or Save mode = price saved, floating display) ── --}}
+                    {{-- ── OPEN (plain open — exit brokerage does not apply yet) ── --}}
                     <div class="space-y-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
                                 <label class="text-xs font-medium text-gray-500 uppercase">
                                     Current Price
-                                    @if($currentPrice !== null && !$position->isMarked())
+                                    @if($currentPrice !== null)
                                         <span class="normal-case text-orange-500 font-normal">(saved)</span>
                                     @endif
                                 </label>
@@ -329,20 +330,6 @@
                             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
                                 <label class="text-xs font-medium text-gray-500 uppercase">Entry Brokerage</label>
                                 <div class="mt-2 text-lg font-semibold text-rose-600">-{{ inr($entryBrokerage) }}</div>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                                <label class="text-xs font-medium text-gray-500 uppercase">Exit Brokerage</label>
-                                <div class="mt-2 text-lg font-semibold text-rose-600">
-                                    {{ $currentPrice !== null ? '-' . inr($exitBrokerage) : '—' }}
-                                </div>
-                            </div>
-                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                                <label class="text-xs font-medium text-gray-500 uppercase">Total Brokerage</label>
-                                <div class="mt-2 text-lg font-semibold text-rose-600">
-                                    {{ $currentPrice !== null ? '-' . inr($totalBrokerage) : '—' }}
-                                </div>
                             </div>
                         </div>
                         @if($currentPrice === null)

@@ -16,7 +16,7 @@
             <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{{ auth()->user()->activeTradingAccount()?->name ?? 'Trading Account' }}</h3>
         </div>
         <div class="flex items-center gap-3">
-            @php $dashGrandTotal = round($floatingPnL + $profitLoss - $totalCommissions, 2); @endphp
+            @php $dashGrandTotal = round($floatingPnL + $profitLoss, 2); @endphp
             <span class="text-sm font-bold px-3 py-1 rounded-full {{ $dashGrandTotal >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' }}">
                 {{ $dashGrandTotal >= 0 ? '+' : '' }}{{ inr($dashGrandTotal) }} {{ $dashGrandTotal >= 0 ? 'Cr.' : 'Dr.' }}
             </span>
