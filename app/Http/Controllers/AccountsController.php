@@ -37,6 +37,12 @@ class AccountsController extends Controller
             $account->has_initial_balance = $summary['has_initial_balance'];
             $account->total_brokerage = $summary['total_brokerage'];
             $account->brokerage_percent = $account->brokerage_percent ?? 0;
+            // Load deposit/withdrawal history for the adjust balance modal
+            $account->balance_entries = \App\Models\Balance::where('trading_account_id', $account->id)
+                ->whereIn('type', ['deposit', 'withdrawal'])
+                ->orderByDesc('date')
+                ->orderByDesc('id')
+                ->get();
         }
 
         return view('accounts.index', compact('accounts', 'activeAccountId'));
@@ -147,6 +153,50 @@ class AccountsController extends Controller
             'message' => 'Trading account updated successfully.',
             'account' => $account,
         ]);
+    }
+
+    public function storeBalance(Request $request, TradingAccount $account)
+    {
+        if ($account->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $validated = $request->validate([
+            'type'        => 'required|in:deposit,withdrawal',
+            'amount'      => 'required|numeric|min:0.01',
+            'date'        => 'required|date',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $balance = \App\Models\Balance::create([
+            'user_id'            => auth()->id(),
+            'trading_account_id' => $account->id,
+            'type'               => $validated['type'],
+            'amount'             => $validated['amount'],
+            'date'               => $validated['date'],
+            'description'        => $validated['description'] ?? null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => ucfirst($validated['type']) . ' of ' . number_format($validated['amount'], 2) . ' recorded successfully.',
+            'balance' => $balance,
+        ]);
+    }
+
+    public function destroyBalance(Request $request, \App\Models\Balance $balance)
+    {
+        if ($balance->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        if ($balance->type === 'initial') {
+            return response()->json(['success' => false, 'message' => 'Cannot delete the initial balance entry.'], 422);
+        }
+
+        $balance->delete();
+
+        return response()->json(['success' => true, 'message' => 'Entry deleted successfully.']);
     }
 
     public function destroy(Request $request, TradingAccount $account)

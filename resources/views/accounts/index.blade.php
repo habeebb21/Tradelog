@@ -39,7 +39,10 @@
 
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     @foreach($accounts as $account)
-        <div class="trading-account-card {{ $account->id === $activeAccountId ? 'is-active' : '' }}">
+        <div class="trading-account-card {{ $account->id === $activeAccountId ? 'is-active' : '' }}"
+             data-balance-entries="{{ e(json_encode($account->balance_entries->map(fn($b) => ['id' => $b->id, 'type' => $b->type, 'amount' => (float)$b->amount, 'date' => $b->date->format('Y-m-d'), 'description' => $b->description ?? '']))) }}"
+             data-account-id="{{ $account->id }}"
+        >
             @if($account->id === $activeAccountId)
                 <div class="h-1 bg-gradient-to-r from-orange-500 to-amber-400"></div>
             @endif
@@ -131,6 +134,13 @@
                     @endif
                 </div>
                 <div class="flex items-center gap-4">
+                    <button
+                        type="button"
+                        onclick="openBalanceModal({{ $account->id }}, '{{ e($account->name) }}')"
+                        class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors"
+                    >
+                        Adjust Balance
+                    </button>
                     <button
                         type="button"
                         data-account-id="{{ $account->id }}"
@@ -250,8 +260,203 @@
     </div>
 </div>
 
+<!-- Adjust Balance Modal -->
+<div id="balance-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Adjust Balance</h3>
+                <p id="balance-modal-account-name" class="text-sm text-gray-500 dark:text-slate-400 mt-0.5"></p>
+            </div>
+            <button onclick="closeBalanceModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 px-6 py-4 space-y-6">
+            <!-- Add entry form -->
+            <form id="balance-entry-form" onsubmit="submitBalanceEntry(event)">
+                <input type="hidden" id="balance-account-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Type</label>
+                        <div class="flex gap-3">
+                            <label class="flex-1 flex items-center gap-2 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-900/20 transition-colors">
+                                <input type="radio" name="balance-type" id="type-deposit" value="deposit" checked class="text-emerald-600">
+                                <span class="text-sm font-medium text-gray-700 dark:text-slate-300">Deposit</span>
+                            </label>
+                            <label class="flex-1 flex items-center gap-2 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 cursor-pointer has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50 dark:has-[:checked]:bg-rose-900/20 transition-colors">
+                                <input type="radio" name="balance-type" id="type-withdrawal" value="withdrawal" class="text-rose-600">
+                                <span class="text-sm font-medium text-gray-700 dark:text-slate-300">Withdrawal</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Amount *</label>
+                        <input type="number" id="balance-amount" step="0.01" min="0.01" required placeholder="10000.00"
+                               class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Date *</label>
+                        <input type="date" id="balance-date" required
+                               class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Note <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <input type="text" id="balance-description" placeholder="e.g. Monthly top-up, Profit withdrawal"
+                               class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                </div>
+                <button type="submit"
+                        class="mt-4 w-full px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors">
+                    Add Entry
+                </button>
+            </form>
+
+            <!-- History -->
+            <div>
+                <h4 class="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3 uppercase tracking-wide">History</h4>
+                <div id="balance-history-list" class="space-y-2">
+                    <p class="text-sm text-gray-400 dark:text-slate-500 text-center py-4">No deposits or withdrawals yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    function showAlert(type, message) {
+    // ── Balance Modal ────────────────────────────────────────────────────────
+    let currentBalanceAccountId = null;
+    let currentBalanceEntries   = [];
+
+    function openBalanceModal(accountId, accountName) {
+        currentBalanceAccountId = accountId;
+
+        // Pull stored entries from the card's data attribute
+        const card = document.querySelector(`[data-account-id="${accountId}"]`);
+        currentBalanceEntries = card ? JSON.parse(card.dataset.balanceEntries || '[]') : [];
+
+        document.getElementById('balance-account-id').value = accountId;
+        document.getElementById('balance-modal-account-name').textContent = accountName;
+        document.getElementById('balance-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('balance-entry-form').reset();
+        document.getElementById('balance-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('type-deposit').checked = true;
+
+        renderBalanceHistory();
+        document.getElementById('balance-modal').classList.remove('hidden');
+    }
+
+    function closeBalanceModal() {
+        document.getElementById('balance-modal').classList.add('hidden');
+    }
+
+    function renderBalanceHistory() {
+        const list = document.getElementById('balance-history-list');
+        if (!currentBalanceEntries.length) {
+            list.innerHTML = '<p class="text-sm text-gray-400 dark:text-slate-500 text-center py-4">No deposits or withdrawals yet.</p>';
+            return;
+        }
+        list.innerHTML = currentBalanceEntries.map(entry => `
+            <div class="flex items-center justify-between gap-3 bg-gray-50 dark:bg-slate-800 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="shrink-0 w-2 h-2 rounded-full ${entry.type === 'deposit' ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold ${entry.type === 'deposit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+                                ${entry.type === 'deposit' ? '+' : '-'}₹${Number(entry.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-slate-400">${entry.date}</span>
+                        </div>
+                        ${entry.description ? `<p class="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">${entry.description}</p>` : ''}
+                    </div>
+                </div>
+                <button onclick="deleteBalanceEntry(${entry.id})"
+                        class="shrink-0 text-gray-400 hover:text-rose-500 transition-colors" title="Delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    async function submitBalanceEntry(event) {
+        event.preventDefault();
+        const accountId   = document.getElementById('balance-account-id').value;
+        const type        = document.querySelector('input[name="balance-type"]:checked').value;
+        const amount      = document.getElementById('balance-amount').value;
+        const date        = document.getElementById('balance-date').value;
+        const description = document.getElementById('balance-description').value.trim();
+
+        try {
+            const response = await fetch(`/accounts/${accountId}/balance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ type, amount, date, description }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                // Add to local list and re-render
+                currentBalanceEntries.unshift({
+                    id: data.balance.id,
+                    type: data.balance.type,
+                    amount: parseFloat(data.balance.amount),
+                    date: data.balance.date,
+                    description: data.balance.description || '',
+                });
+                // Update the card's data attribute so re-opens reflect the new entry
+                const card = document.querySelector(`[data-account-id="${accountId}"]`);
+                if (card) card.dataset.balanceEntries = JSON.stringify(currentBalanceEntries);
+                renderBalanceHistory();
+                document.getElementById('balance-entry-form').reset();
+                document.getElementById('balance-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('type-deposit').checked = true;
+                showAlert('success', data.message);
+                // Reload page after short delay to update balance/equity figures
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showAlert('error', data.message || 'Failed to add entry.');
+            }
+        } catch (e) {
+            showAlert('error', 'Failed to add entry.');
+            console.error(e);
+        }
+    }
+
+    async function deleteBalanceEntry(balanceId) {
+        if (!confirm('Delete this entry? This will adjust the account balance.')) return;
+        try {
+            const response = await fetch(`/accounts/balance/${balanceId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await response.json();
+            if (data.success) {
+                currentBalanceEntries = currentBalanceEntries.filter(e => e.id !== balanceId);
+                const card = document.querySelector(`[data-account-id="${currentBalanceAccountId}"]`);
+                if (card) card.dataset.balanceEntries = JSON.stringify(currentBalanceEntries);
+                renderBalanceHistory();
+                showAlert('success', data.message);
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showAlert('error', data.message || 'Failed to delete entry.');
+            }
+        } catch (e) {
+            showAlert('error', 'Failed to delete entry.');
+            console.error(e);
+        }
+    }
+</script>
         const banner = document.getElementById('alert-banner');
         const msgEl = document.getElementById('alert-message');
         const iconSuccess = document.getElementById('alert-icon-success');
