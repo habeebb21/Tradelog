@@ -236,14 +236,30 @@ class AccountsController extends Controller
             ], 422);
         }
 
-        // Zero out starting balance and delete all balance entries (deposits/withdrawals)
+        $instrumentIds = $account->instruments()->pluck('id');
+
+        // Delete closed position tag pivots, then closed positions (realized PnL → 0)
+        $closedPositionIds = Position::whereIn('instrument_id', $instrumentIds)
+            ->whereNotNull('close_datetime')
+            ->pluck('id');
+
+        \Illuminate\Support\Facades\DB::table('position_trade_tag')
+            ->whereIn('position_id', $closedPositionIds)
+            ->delete();
+
+        Position::whereIn('id', $closedPositionIds)->delete();
+
+        // Delete all fills for this account's instruments (no orphan fill data)
+        \App\Models\Fill::whereIn('instrument_id', $instrumentIds)->delete();
+
+        // Zero out starting balance and remove all deposit/withdrawal entries
         $account->update(['starting_balance' => 0]);
 
         \App\Models\Balance::where('trading_account_id', $account->id)->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Account reset. Balance, equity, and P&L are now zero.',
+            'message' => 'Account reset. Balance, equity, P&L, and trade history are now zero.',
         ]);
     }
 
