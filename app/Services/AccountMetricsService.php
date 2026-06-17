@@ -61,7 +61,11 @@ class AccountMetricsService
             ->get();
 
         $floatingPnL   = round($this->calculateFloatingPnL($openPositions), 2);
-        $equity        = round($balance + $realizedPnL + $floatingPnL, 2);
+
+        // ── Equity: use override if set, otherwise compute from balance + P&L ─
+        $equity = $account->equity_override !== null
+            ? round((float) $account->equity_override, 2)
+            : round($balance + $realizedPnL + $floatingPnL, 2);
 
         // ── Brokerage: aggregated in SQL, open-position brokerage in PHP ─────
         $closedBrokerage = $this->closedBrokerageForAccount($account);

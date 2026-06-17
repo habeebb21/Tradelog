@@ -161,48 +161,16 @@ class AccountsController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
-        // Block if there are open positions — equity can only be set to an exact value
-        // when there is no floating P&L and no realized P&L in play.
-        $hasOpenPositions = Position::whereHas('instrument', function ($query) use ($account) {
-            $query->where('trading_account_id', $account->id);
-        })->whereNull('close_datetime')->exists();
-
-        if ($hasOpenPositions) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Close all open trades before setting equity.',
-            ], 422);
-        }
-
         $validated = $request->validate([
-            'starting_balance' => 'required|numeric|min:0',
+            'equity_override' => 'required|numeric|min:0',
         ]);
 
-        $instrumentIds = $account->instruments()->pluck('id');
-
-        // Clear all closed positions, fills, and balance entries so that
-        // equity = starting_balance exactly (no realized/floating P&L noise).
-        $closedPositionIds = Position::whereIn('instrument_id', $instrumentIds)
-            ->whereNotNull('close_datetime')
-            ->pluck('id');
-
-        \Illuminate\Support\Facades\DB::table('position_trade_tag')
-            ->whereIn('position_id', $closedPositionIds)
-            ->delete();
-
-        Position::whereIn('id', $closedPositionIds)->delete();
-
-        \App\Models\Fill::whereIn('instrument_id', $instrumentIds)->delete();
-
-        \App\Models\Balance::where('trading_account_id', $account->id)->delete();
-
-        // Set starting_balance to the exact equity value requested.
-        $account->update(['starting_balance' => $validated['starting_balance']]);
+        $account->update(['equity_override' => $validated['equity_override']]);
 
         return response()->json([
             'success'          => true,
-            'message'          => 'Equity set to ' . number_format((float) $validated['starting_balance'], 2) . '. Trade history cleared.',
-            'starting_balance' => (float) $account->starting_balance,
+            'message'          => 'Equity set to ' . number_format((float) $validated['equity_override'], 2) . '.',
+            'equity_override'  => (float) $account->equity_override,
         ]);
     }
 

@@ -16,6 +16,7 @@ class TradingAccount extends Model
         'market',
         'currency',
         'starting_balance',
+        'equity_override',
         'brokerage_percent',
         'is_default',
         'notes',
@@ -23,6 +24,7 @@ class TradingAccount extends Model
 
     protected $casts = [
         'starting_balance' => 'decimal:2',
+        'equity_override'  => 'decimal:2',
         'brokerage_percent' => 'decimal:4',
         'is_default' => 'boolean',
     ];
