@@ -165,6 +165,13 @@
                         Edit
                     </button>
                     <button
+                        type="button"
+                        onclick="openResetModal({{ $account->id }}, '{{ e($account->name) }}', {{ $account->open_positions_count }})"
+                        class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 transition-colors"
+                    >
+                        Reset
+                    </button>
+                    <button
                         onclick="deleteAccount({{ $account->id }})"
                         class="text-sm font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-500 dark:hover:text-rose-300 transition-colors"
                     >
@@ -174,6 +181,60 @@
             </div>
         </div>
     @endforeach
+</div>
+
+<!-- Reset Account Modal -->
+<div id="reset-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm border border-gray-200 dark:border-slate-700">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Reset Account</h3>
+                <p id="reset-modal-account-name" class="text-sm text-gray-500 dark:text-slate-400 mt-0.5"></p>
+            </div>
+            <button onclick="closeResetModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="px-6 py-5">
+            <div id="reset-blocked-notice" class="hidden mb-4 flex items-start gap-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg px-4 py-3">
+                <svg class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm text-rose-700 dark:text-rose-300">
+                    This account has <strong id="reset-open-count"></strong> open trade(s). Close all trades before resetting.
+                </p>
+            </div>
+            <div id="reset-confirm-body">
+                <div class="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 mb-4">
+                    <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm text-amber-700 dark:text-amber-300">
+                        This will set the starting balance to <strong>zero</strong> and remove all deposits &amp; withdrawals. Trade history is kept. This cannot be undone.
+                    </p>
+                </div>
+                <input type="hidden" id="reset-account-id">
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeResetModal()"
+                        class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="confirmReset()"
+                        class="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-colors">
+                        Reset Account
+                    </button>
+                </div>
+            </div>
+            <div id="reset-blocked-actions" class="hidden">
+                <button type="button" onclick="closeResetModal()"
+                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Add Modal -->
@@ -525,6 +586,56 @@
         }
     }
 
+    // ── Reset Account Modal ──────────────────────────────────────────────────
+    function openResetModal(accountId, accountName, openCount) {
+        document.getElementById('reset-account-id').value = accountId;
+        document.getElementById('reset-modal-account-name').textContent = accountName;
+
+        const blocked        = openCount > 0;
+        const blockedNotice  = document.getElementById('reset-blocked-notice');
+        const confirmBody    = document.getElementById('reset-confirm-body');
+        const blockedActions = document.getElementById('reset-blocked-actions');
+
+        document.getElementById('reset-open-count').textContent = openCount;
+
+        blockedNotice.classList.toggle('hidden', !blocked);
+        confirmBody.classList.toggle('hidden', blocked);
+        blockedActions.classList.toggle('hidden', !blocked);
+
+        document.getElementById('reset-modal').classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+        document.getElementById('reset-modal').classList.add('hidden');
+    }
+
+    async function confirmReset() {
+        const accountId = document.getElementById('reset-account-id').value;
+
+        try {
+            const response = await fetch(`/accounts/${accountId}/reset`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await response.json();
+            if (data.success) {
+                closeResetModal();
+                showAlert('success', data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('error', data.message || 'Failed to reset account.');
+                closeResetModal();
+            }
+        } catch (e) {
+            showAlert('error', 'Something went wrong.');
+            closeResetModal();
+            console.error(e);
+        }
+    }
+
     async function deleteBalanceEntry(balanceId) {
         if (!confirm('Delete this entry? This will adjust the account balance.')) return;
         try {
@@ -551,7 +662,9 @@
             console.error(e);
         }
     }
-</script>
+
+    // ── Alert banner ─────────────────────────────────────────────────────────
+    function showAlert(type, message) {
         const banner = document.getElementById('alert-banner');
         const msgEl = document.getElementById('alert-message');
         const iconSuccess = document.getElementById('alert-icon-success');

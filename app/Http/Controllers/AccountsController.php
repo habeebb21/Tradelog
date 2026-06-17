@@ -218,6 +218,35 @@ class AccountsController extends Controller
         return response()->json(['success' => true, 'message' => 'Entry deleted successfully.']);
     }
 
+    public function reset(Request $request, TradingAccount $account)
+    {
+        if ($account->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        // Block reset if there are any open positions
+        $hasOpenPositions = Position::whereHas('instrument', function ($query) use ($account) {
+            $query->where('trading_account_id', $account->id);
+        })->whereNull('close_datetime')->exists();
+
+        if ($hasOpenPositions) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Close all open trades before resetting this account.',
+            ], 422);
+        }
+
+        // Zero out starting balance and delete all balance entries (deposits/withdrawals)
+        $account->update(['starting_balance' => 0]);
+
+        \App\Models\Balance::where('trading_account_id', $account->id)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Account reset. Balance, equity, and P&L are now zero.',
+        ]);
+    }
+
     public function destroy(Request $request, TradingAccount $account)
     {
         if ($account->user_id !== auth()->id()) {

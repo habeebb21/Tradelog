@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/accounts/{account}/balance', [App\Http\Controllers\AccountsController::class, 'storeBalance'])->name('accounts.balance.store');
     Route::delete('/accounts/balance/{balance}', [App\Http\Controllers\AccountsController::class, 'destroyBalance'])->name('accounts.balance.destroy');
     Route::patch('/accounts/{account}/equity', [App\Http\Controllers\AccountsController::class, 'setEquity'])->name('accounts.equity.set');
+    Route::post('/accounts/{account}/reset', [App\Http\Controllers\AccountsController::class, 'reset'])->name('accounts.reset');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/trades', [TradesController::class, 'index'])->name('trades');
