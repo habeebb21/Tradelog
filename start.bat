@@ -1,10 +1,19 @@
 @echo off
 title Tradelog - Starting...
 
+:: Go to project folder
+cd /d "%~dp0"
+
+:: Check if already running — if so, just open browser immediately
+docker ps --filter "name=tradelog" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /i "tradelog" >nul
+if not errorlevel 1 (
+    start "" http://localhost:8080
+    exit /b 0
+)
+
+:: Not running — check if Docker Desktop is up
 echo Starting Tradelog...
 echo.
-
-:: Check if Docker Desktop is running
 docker info >nul 2>&1
 if errorlevel 1 (
     echo Docker Desktop is not running. Starting it...
@@ -18,10 +27,7 @@ if errorlevel 1 (
     echo.
 )
 
-:: Go to project folder
-cd /d "%~dp0"
-
-:: Always rebuild to pick up latest code changes
+:: Rebuild and start
 echo Building and starting app...
 docker compose up --build -d
 
@@ -42,9 +48,4 @@ if errorlevel 1 goto waitapp
 echo.
 echo App is ready! Opening browser...
 start "" http://localhost:8080
-echo.
-echo Tradelog is running at http://localhost:8080
-echo Close this window at any time - the app keeps running in the background.
-echo To stop the app, run stop.bat
-echo.
-pause
+exit /b 0

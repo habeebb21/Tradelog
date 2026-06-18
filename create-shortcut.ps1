@@ -1,6 +1,6 @@
 $projectDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $vbsPath      = "$projectDir\Tradelog.vbs"
-$iconPath     = "$projectDir\public\favicon.ico"
+$iconPath     = "$projectDir\tradelog.ico"
 $desktopPath  = [Environment]::GetFolderPath("Desktop")
 $shortcutPath = "$desktopPath\Tradelog.lnk"
 
