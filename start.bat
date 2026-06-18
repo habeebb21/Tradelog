@@ -1,5 +1,5 @@
 @echo off
-title Tradalyze
+title Tradalyze - Starting...
 
 echo Starting Tradalyze...
 echo.
