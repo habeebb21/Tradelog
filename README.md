@@ -52,11 +52,12 @@ This is the easiest way to run Tradelog — no PHP, Node, or Composer needed on 
 ### Windows (double-click launch)
 
 1. Clone or download this repository
-2. Double-click **`start.bat`**
+2. Double-click **`setup.bat`** — this generates the icon and creates the shortcut (only needed once after cloning)
+3. Double-click **`Tradelog.lnk`** to launch the app
 
-That's it. The script will build the app, wait until it's ready, and open it in your browser automatically.
+That's it. The app will start Docker, wait until it's ready, and open your browser automatically. An Exit button window will appear — click **Exit** to stop the app cleanly.
 
-To stop the app, double-click **`stop.bat`**.
+To launch again in future, just double-click **`Tradelog.lnk`**.
 
 ### Manual (any OS)
 
