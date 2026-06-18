@@ -21,16 +21,9 @@ if errorlevel 1 (
 :: Go to project folder
 cd /d "%~dp0"
 
-:: Check if image already exists (skip build if it does)
-docker image inspect tradelog:latest >nul 2>&1
-if errorlevel 1 (
-    echo First run detected - building image. This will take a few minutes...
-    echo.
-    docker compose up --build -d
-) else (
-    echo Starting app...
-    docker compose up -d
-)
+:: Always rebuild to pick up latest code changes
+echo Building and starting app...
+docker compose up --build -d
 
 if errorlevel 1 (
     echo.
