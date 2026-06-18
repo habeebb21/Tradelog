@@ -1,79 +1,57 @@
 @echo off
-title Tradelog - Starting...
-color 0A
+title Tradalyze
 
-echo.
-echo  ==========================================
-echo    Tradelog - Trading Journal
-echo  ==========================================
+echo Starting Tradalyze...
 echo.
 
-:: Check if Docker is installed
-where docker >nul 2>&1
-if %errorlevel% neq 0 (
-    color 0C
-    echo  [ERROR] Docker is not installed!
-    echo.
-    echo  Please install Docker Desktop first:
-    echo  https://www.docker.com/products/docker-desktop/
-    echo.
-    pause
-    exit /b 1
-)
-
-:: Check if Docker is running
+:: Check if Docker Desktop is running
 docker info >nul 2>&1
-if %errorlevel% neq 0 (
-    echo  Docker is not running. Starting Docker Desktop...
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe" 2>nul
-    if %errorlevel% neq 0 (
-        start "" "%LOCALAPPDATA%\Docker\Docker Desktop.exe" 2>nul
-    )
-    echo.
-    echo  Waiting for Docker to start (this may take up to 60 seconds)...
-    :wait_docker
+if errorlevel 1 (
+    echo Docker Desktop is not running. Starting it...
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    echo Waiting for Docker to start ^(this may take 30-60 seconds^)...
+    :waitdocker
     timeout /t 5 /nobreak >nul
     docker info >nul 2>&1
-    if %errorlevel% neq 0 goto wait_docker
-    echo  Docker is ready!
+    if errorlevel 1 goto waitdocker
+    echo Docker is ready.
+    echo.
 )
 
-echo  Starting Tradelog...
-echo.
-
-:: Navigate to app folder and start containers
+:: Go to project folder
 cd /d "%~dp0"
-docker compose up -d --build 2>&1
 
-if %errorlevel% neq 0 (
-    color 0C
+:: Check if image already exists (skip build if it does)
+docker image inspect tradelog:latest >nul 2>&1
+if errorlevel 1 (
+    echo First run detected - building image. This will take a few minutes...
     echo.
-    echo  [ERROR] Failed to start Tradelog.
-    echo  Please make sure Docker Desktop is running and try again.
+    docker compose up --build -d
+) else (
+    echo Starting app...
+    docker compose up -d
+)
+
+if errorlevel 1 (
     echo.
+    echo ERROR: Failed to start. Check that Docker Desktop is running.
     pause
     exit /b 1
 )
 
 :: Wait for the app to be ready
-echo.
-echo  Waiting for app to be ready...
-:wait_app
+echo Waiting for app to be ready...
+:waitapp
 timeout /t 3 /nobreak >nul
-curl -s -o nul -w "%%{http_code}" http://localhost:8080 2>nul | findstr /r "200 302" >nul
-if %errorlevel% neq 0 goto wait_app
+curl -s -o nul -w "%%{http_code}" http://localhost:8080 2>nul | findstr /r "^[23]" >nul
+if errorlevel 1 goto waitapp
 
 echo.
-echo  ==========================================
-echo    Tradelog is ready!
-echo    Opening http://localhost:8080 ...
-echo  ==========================================
+echo App is ready! Opening browser...
+start "" http://localhost:8080
 echo.
-
-:: Open the app in the default browser
-start "" "http://localhost:8080"
-
-echo  App is running in the background.
-echo  Close this window or run stop.bat to shut it down.
+echo Tradalyze is running at http://localhost:8080
+echo Close this window at any time - the app keeps running in the background.
+echo To stop the app, run stop.bat
 echo.
 pause

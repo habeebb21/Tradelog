@@ -1,17 +1,10 @@
 @echo off
-title Tradelog - Stopping...
-color 0E
+title Tradalyze - Stop
 
-echo.
-echo  ==========================================
-echo    Tradelog - Shutting Down
-echo  ==========================================
-echo.
-
+echo Stopping Tradalyze...
 cd /d "%~dp0"
 docker compose down
 
 echo.
-echo  Tradelog has been stopped.
-echo.
+echo Tradalyze has been stopped.
 pause
