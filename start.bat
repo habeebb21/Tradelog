@@ -5,7 +5,7 @@ title Tradelog - Starting...
 cd /d "%~dp0"
 
 :: Check if already running — if so, just open browser immediately
-docker ps --filter "name=tradelog" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /i "tradelog" >nul
+docker ps --filter "name=tradelog_app" --filter "status=running" --format "{{.Names}}" 2>nul | findstr /i "tradelog_app" >nul
 if not errorlevel 1 (
     start "" http://localhost:8080
     exit /b 0
@@ -27,9 +27,12 @@ if errorlevel 1 (
     echo.
 )
 
-:: Rebuild and start
-echo Building and starting app...
-docker compose up --build -d
+:: Remove any stopped/stuck container with the same name before starting
+docker rm -f tradelog_app >nul 2>&1
+
+:: Start using existing image (no rebuild)
+echo Starting app...
+docker compose up -d
 
 if errorlevel 1 (
     echo.
