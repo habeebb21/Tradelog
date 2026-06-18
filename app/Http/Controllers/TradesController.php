@@ -9,6 +9,7 @@ use App\Models\Fill;
 use App\Models\TradeTag;
 use App\Models\TradingAccount;
 use App\Services\FifoPositionService;
+use App\Data\NseSymbols;
 use App\Services\AccountMetricsService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,6 +29,50 @@ class TradesController extends Controller
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Symbol search API — returns matching NSE symbols for autocomplete.
+     * GET /api/symbols/search?q=RELIAN&type=future   (type: stock|future|option|all)
+     */
+    public function symbolSearch(Request $request)
+    {
+        $q    = strtoupper(trim($request->query('q', '')));
+        $type = strtolower($request->query('type', 'all'));
+
+        if (strlen($q) < 1) {
+            return response()->json([]);
+        }
+
+        $all = NseSymbols::all();
+
+        // Filter by asset type when specified
+        $typeMap = ['stock' => 'EQ', 'future' => 'FUT', 'option' => 'FUT', 'index' => 'IDX'];
+        $filterType = $typeMap[$type] ?? null;
+
+        $results = array_filter($all, function ($s) use ($q, $filterType) {
+            $symbolMatch = str_starts_with($s['symbol'], $q) ||
+                           str_contains($s['symbol'], $q);
+            $nameMatch   = str_contains(strtoupper($s['name']), $q);
+
+            $typeOk = $filterType === null || $s['type'] === $filterType
+                   || ($filterType === 'FUT' && $s['type'] === 'IDX'); // indices appear in future/option searches
+
+            return ($symbolMatch || $nameMatch) && $typeOk;
+        });
+
+        // Sort: exact prefix match first, then alphabetical
+        usort($results, function ($a, $b) use ($q) {
+            $aPrefix = str_starts_with($a['symbol'], $q) ? 0 : 1;
+            $bPrefix = str_starts_with($b['symbol'], $q) ? 0 : 1;
+            if ($aPrefix !== $bPrefix) return $aPrefix - $bPrefix;
+            return strcmp($a['symbol'], $b['symbol']);
+        });
+
+        // Cap at 12 results
+        $results = array_slice(array_values($results), 0, 12);
+
+        return response()->json($results);
     }
 
     private function selectedTradingAccountId(?Request $request = null): ?int

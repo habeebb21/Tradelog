@@ -166,17 +166,23 @@
                 <!-- Common Fields -->
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
                     <!-- Symbol -->
-                    <div>
+                    <div class="relative" id="symbol-wrapper">
                         <label for="symbol" class="block text-xs font-medium text-gray-700 mb-1">Symbol *</label>
                         <input 
                             type="text" 
                             id="symbol" 
                             name="symbol" 
                             required
+                            autocomplete="off"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 uppercase"
-                            placeholder="SPX"
-                            oninput="this.value = this.value.toUpperCase()"
+                            placeholder="e.g. RELIANCE, NIFTY"
+                            oninput="this.value = this.value.toUpperCase(); symbolAutocomplete(this.value)"
+                            onkeydown="symbolKeydown(event)"
+                            onblur="setTimeout(closeSymbolDropdown, 180)"
                         >
+                        <ul id="symbol-dropdown"
+                            class="hidden absolute z-50 left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto text-sm"
+                        ></ul>
                     </div>
 
                     <!-- Quantity -->
@@ -1294,6 +1300,112 @@
             validateBrokerFields();
         }
     });
+
+    // ── Symbol Autocomplete ──────────────────────────────────────────────────
+    let _acItems    = [];   // current suggestion list
+    let _acIndex    = -1;   // keyboard-highlighted index
+    let _acDebounce = null;
+
+    const BADGE = { IDX: 'Index', FUT: 'F&O', EQ: 'Equity' };
+    const BADGE_COLOR = {
+        IDX: 'bg-violet-100 text-violet-700',
+        FUT: 'bg-amber-100  text-amber-700',
+        EQ:  'bg-sky-100    text-sky-700',
+    };
+
+    function symbolAutocomplete(val) {
+        clearTimeout(_acDebounce);
+        if (val.length < 1) { closeSymbolDropdown(); return; }
+
+        _acDebounce = setTimeout(async () => {
+            const assetType = document.getElementById('asset_type')?.value || 'all';
+            const url = `/api/symbols/search?q=${encodeURIComponent(val)}&type=${encodeURIComponent(assetType)}`;
+            try {
+                const res  = await fetch(url, { headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
+                const data = await res.json();
+                _acItems = data;
+                _acIndex = -1;
+                renderSymbolDropdown();
+            } catch (e) { closeSymbolDropdown(); }
+        }, 120);
+    }
+
+    function renderSymbolDropdown() {
+        const ul = document.getElementById('symbol-dropdown');
+        if (!_acItems.length) { closeSymbolDropdown(); return; }
+
+        ul.innerHTML = _acItems.map((item, i) => `
+            <li data-index="${i}"
+                class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-orange-50 border-b border-gray-100 last:border-0"
+                onmousedown="selectSymbol(${i})">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="font-semibold text-gray-900 shrink-0">${item.symbol}</span>
+                    <span class="text-xs text-gray-500 truncate">${item.name}</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    ${item.lot > 1 ? `<span class="text-xs text-gray-400">Lot: ${item.lot}</span>` : ''}
+                    <span class="text-xs font-medium px-1.5 py-0.5 rounded ${BADGE_COLOR[item.type] || 'bg-gray-100 text-gray-600'}">${BADGE[item.type] || item.type}</span>
+                </div>
+            </li>`).join('');
+
+        ul.classList.remove('hidden');
+    }
+
+    function selectSymbol(index) {
+        const item = _acItems[index];
+        if (!item) return;
+
+        document.getElementById('symbol').value = item.symbol;
+        closeSymbolDropdown();
+
+        // Auto-fill lot size depending on current asset type
+        const assetType = document.getElementById('asset_type')?.value;
+        if (item.lot > 1) {
+            if (assetType === 'option') {
+                const mField = document.getElementById('multiplier');
+                if (mField) { mField.value = item.lot; calculatePnL(); }
+            } else if (assetType === 'future') {
+                const mField = document.getElementById('future_multiplier');
+                if (mField) { mField.value = item.lot; calculatePnL(); }
+            }
+        }
+    }
+
+    function closeSymbolDropdown() {
+        _acItems = [];
+        _acIndex = -1;
+        const ul = document.getElementById('symbol-dropdown');
+        if (ul) { ul.innerHTML = ''; ul.classList.add('hidden'); }
+    }
+
+    function symbolKeydown(event) {
+        const ul = document.getElementById('symbol-dropdown');
+        if (ul.classList.contains('hidden')) return;
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            _acIndex = Math.min(_acIndex + 1, _acItems.length - 1);
+            highlightAcItem();
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            _acIndex = Math.max(_acIndex - 1, -1);
+            highlightAcItem();
+        } else if (event.key === 'Enter' && _acIndex >= 0) {
+            event.preventDefault();
+            selectSymbol(_acIndex);
+        } else if (event.key === 'Escape') {
+            closeSymbolDropdown();
+        }
+    }
+
+    function highlightAcItem() {
+        const ul = document.getElementById('symbol-dropdown');
+        ul.querySelectorAll('li').forEach((li, i) => {
+            li.classList.toggle('bg-orange-50', i === _acIndex);
+            li.classList.toggle('font-semibold', i === _acIndex);
+        });
+        if (_acIndex >= 0) ul.querySelectorAll('li')[_acIndex]?.scrollIntoView({ block: 'nearest' });
+    }
 </script>
 @endsection
 

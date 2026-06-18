@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/trades', [TradesController::class, 'index'])->name('trades');
+    Route::get('/api/symbols/search', [TradesController::class, 'symbolSearch'])->name('api.symbols.search');
     Route::get('/trades/create', [TradesController::class, 'create'])->name('trades.create');
     Route::get('/trades/{position}/edit', [TradesController::class, 'edit'])->name('trades.edit');
     Route::post('/trades', [TradesController::class, 'store'])->name('trades.store');
