@@ -1,7 +1,7 @@
 @echo off
-title Tradalyze - Starting...
+title Tradelog - Starting...
 
-echo Starting Tradalyze...
+echo Starting Tradelog...
 echo.
 
 :: Check if Docker Desktop is running
@@ -50,7 +50,7 @@ echo.
 echo App is ready! Opening browser...
 start "" http://localhost:8080
 echo.
-echo Tradalyze is running at http://localhost:8080
+echo Tradelog is running at http://localhost:8080
 echo Close this window at any time - the app keeps running in the background.
 echo To stop the app, run stop.bat
 echo.
