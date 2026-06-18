@@ -2,7 +2,7 @@ $projectDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $vbsPath      = "$projectDir\Tradelog.vbs"
 $iconPath     = "$projectDir\tradelog.ico"
 $desktopPath  = [Environment]::GetFolderPath("Desktop")
-$shortcutPath = "$desktopPath\Tradelog.lnk"
+$shortcutPath = "$projectDir\Tradelog.lnk"
 
 $shell    = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
@@ -20,9 +20,10 @@ if (Test-Path $iconPath) {
 
 $shortcut.Save()
 
-# Also remove old Tradalyze shortcut from desktop if it exists
-$oldShortcut = "$desktopPath\Tradalyze.lnk"
-if (Test-Path $oldShortcut) { Remove-Item $oldShortcut -Force }
+# Remove old shortcuts from desktop if they exist
+foreach ($old in @("$desktopPath\Tradelog.lnk", "$desktopPath\Tradalyze.lnk")) {
+    if (Test-Path $old) { Remove-Item $old -Force }
+}
 
-Write-Host "Done! Tradelog shortcut created on your Desktop."
-Write-Host "Right-click it and choose 'Pin to taskbar'."
+Write-Host "Done! Tradelog.lnk created in the project folder."
+Write-Host "Right-click it and choose 'Pin to taskbar' or 'Send to Desktop'."
