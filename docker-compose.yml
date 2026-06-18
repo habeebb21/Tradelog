@@ -25,25 +25,25 @@ services:
       - SESSION_DRIVER=database
       - QUEUE_CONNECTION=database
     networks:
-      - tradalyze_network
+      - tradelog_network
 
   # Optional: MySQL database (uncomment if you prefer MySQL over SQLite)
   # mysql:
   #   image: mysql:8.0
-  #   container_name: tradalyze_mysql
+  #   container_name: tradelog_mysql
   #   restart: unless-stopped
   #   environment:
-  #     MYSQL_DATABASE: tradalyze
+  #     MYSQL_DATABASE: tradelog
   #     MYSQL_ROOT_PASSWORD: root_password
-  #     MYSQL_USER: tradalyze_user
-  #     MYSQL_PASSWORD: tradalyze_password
+  #     MYSQL_USER: tradelog_user
+  #     MYSQL_PASSWORD: tradelog_password
   #   volumes:
   #     - mysql_data:/var/lib/mysql
   #   networks:
-  #     - tradalyze_network
+  #     - tradelog_network
 
 networks:
-  tradalyze_network:
+  tradelog_network:
     driver: bridge
 
 # Uncomment if using MySQL

@@ -102,7 +102,7 @@ foreach ($imgMs in $imgStreams) {
 }
 
 $writer.Flush()
-[System.IO.File]::WriteAllBytes("h:\tradalyze-latest\tradelog.ico", $ms.ToArray())
+[System.IO.File]::WriteAllBytes("h:\Tradelog\tradelog.ico", $ms.ToArray())
 $ms.Dispose()
 $writer.Dispose()
 $bmp.Dispose()

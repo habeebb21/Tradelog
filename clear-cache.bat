@@ -2,7 +2,7 @@
 setlocal
 
 echo ============================================
-echo  Tradalyze - Rebuild and Restart
+echo  Tradelog - Rebuild and Restart
 echo ============================================
 echo.
 

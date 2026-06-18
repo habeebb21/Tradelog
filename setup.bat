@@ -1,5 +1,5 @@
 @echo off
-echo 🚀 Tradalyze Setup Script
+echo Tradelog Setup Script
 echo =========================
 echo.
 

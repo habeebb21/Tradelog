@@ -28,7 +28,7 @@ RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd zi
 
 # Set default environment variables for standalone container
 # Note: APP_KEY is generated at runtime by entrypoint.sh if not provided
-ENV APP_NAME=Tradalyze \
+ENV APP_NAME=Tradelog \
     APP_ENV=production \
     APP_DEBUG=false \
     APP_URL=http://localhost:8080 \
