@@ -3,6 +3,36 @@ param([string]$ProjectDir)
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+# Single-instance guard using a named mutex
+Add-Type -TypeDefinition @"
+using System;
+using System.Threading;
+public class SingleInstance {
+    private static Mutex mutex;
+    public static bool IsAlreadyRunning() {
+        bool createdNew;
+        mutex = new Mutex(true, "TradelogTrayWindow", out createdNew);
+        if (!createdNew) {
+            // Bring existing window to front
+            var proc = System.Diagnostics.Process.GetCurrentProcess();
+            foreach (var p in System.Diagnostics.Process.GetProcessesByName(proc.ProcessName)) {
+                if (p.Id != proc.Id && p.MainWindowHandle != IntPtr.Zero) {
+                    SetForegroundWindow(p.MainWindowHandle);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+}
+"@
+
+if ([SingleInstance]::IsAlreadyRunning()) {
+    exit
+}
+
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'Tradelog'
 $form.Size = New-Object System.Drawing.Size(300, 160)
