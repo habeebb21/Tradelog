@@ -123,7 +123,66 @@
                         <span class="sidebar-text ml-3">Logout</span>
                     </button>
                 </form>
+
+                <!-- Exit (stop server) -->
+                <button
+                    type="button"
+                    onclick="confirmExit()"
+                    class="sidebar-link flex items-center w-full px-4 py-3 mt-1 rounded-lg text-rose-400 hover:bg-rose-900/30 hover:text-rose-300 transition-all duration-200"
+                    title="Exit Tradelog"
+                >
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9"/>
+                    </svg>
+                    <span class="sidebar-text ml-3">Exit</span>
+                </button>
             </div>
+
+            <!-- Exit Confirmation Modal -->
+            <div id="exit-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm border border-gray-200 dark:border-slate-700 p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Exit Tradelog?</h3>
+                            <p class="text-sm text-gray-500 dark:text-slate-400">This will stop the server and close the app.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button type="button" onclick="document.getElementById('exit-modal').classList.add('hidden')"
+                            class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="button" onclick="doExit()"
+                            class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold transition-colors">
+                            Exit
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function confirmExit() {
+                    document.getElementById('exit-modal').classList.remove('hidden');
+                }
+                async function doExit() {
+                    document.getElementById('exit-modal').innerHTML =
+                        '<div class="flex flex-col items-center justify-center py-8 gap-3">' +
+                        '<svg class="w-10 h-10 text-rose-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
+                        '<p class="text-gray-700 dark:text-slate-300 font-medium">Shutting down...</p></div>';
+                    try {
+                        await fetch('{{ route("app.exit") }}', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                        });
+                    } catch(e) { /* server stopped, expected */ }
+                    setTimeout(() => window.close(), 1500);
+                }
+            </script>
         </aside>
         
         <!-- Toggle Button -->

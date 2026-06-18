@@ -24,6 +24,7 @@ Route::middleware('guest')->group(function () {
 
 // Logout Route (Authenticated)
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+Route::post('/exit', [App\Http\Controllers\AppController::class, 'exit'])->name('app.exit')->middleware('auth');
 
 // Protected Routes (Require Authentication)
 Route::middleware('auth')->group(function () {
