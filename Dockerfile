@@ -38,7 +38,8 @@ ENV APP_NAME=Tradelog \
     SESSION_DRIVER=database \
     QUEUE_CONNECTION=database \
     CACHE_STORE=database \
-    FILESYSTEM_DISK=local
+    FILESYSTEM_DISK=local \
+    PORT=8080
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -71,8 +72,8 @@ RUN mkdir -p /var/www/html/database /var/www/html/storage/app /var/www/html/stor
     && chmod -R 775 /var/www/html/database \
     && chmod 664 /var/www/html/database/database.sqlite
 
-# Expose port 80
-EXPOSE 80
+# Expose port (Railway uses 8080 by default)
+EXPOSE 8080
 
 # Set entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
