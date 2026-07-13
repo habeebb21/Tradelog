@@ -20,7 +20,7 @@ if [ "$DB_CONNECTION" = "sqlite" ]; then
 fi
 
 # Run migrations
-php artisan migrate --force 2>/dev/null || true
+php artisan migrate --force
 
 # Cache config
 php artisan config:clear
